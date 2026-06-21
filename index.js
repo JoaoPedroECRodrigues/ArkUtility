@@ -36,8 +36,8 @@ client.on("messageCreate", async (message) => {
   const args = message.content.slice(PREFIX.length).trim().split(/ +/);
   const command = args.shift().toLowerCase();
 
-  // COMANDO PRINCIPAL: !central (Cria o Painel Fixo do ArkUtil)
-  if (command === "central") {
+  // COMANDO PRINCIPAL: Aceita várias palavras para abrir o painel!
+  if (["menu", "painel", "ajuda", "arkzone", "ark"].includes(command)) {
     const embedCentral = new EmbedBuilder()
       .setTitle("🌐 Central ArkUtil")
       .setColor(0x0099ff)
@@ -63,7 +63,7 @@ client.on("messageCreate", async (message) => {
 // LÓGICA DE NAVEGAÇÃO DOS MENUS
 // ==========================================
 client.on("interactionCreate", async (interaction) => {
-  // 1. O jogador clicou para abrir o menu inicial
+  // 1. Abertura do Menu Inicial
   if (interaction.isButton() && interaction.customId === "btn_abrir_menu") {
     const selectServidor = new StringSelectMenuBuilder()
       .setCustomId("menu_servidor")
@@ -78,29 +78,25 @@ client.on("interactionCreate", async (interaction) => {
           .setEmoji("🧪")
           .setValue("arkbot"),
       );
-
     const row = new ActionRowBuilder().addComponents(selectServidor);
-
     await interaction.reply({
-      content:
-        "Olá! Por favor, escolha de qual servidor você quer ver as informações:",
+      content: "Olá! Escolha de qual servidor você quer ver as informações:",
       components: [row],
       ephemeral: true,
     });
   }
 
-  // 2. O jogador selecionou algo em um dos Menus
+  // 2. Ouvindo as seleções
   if (interaction.isStringSelectMenu()) {
     const escolha = interaction.values[0];
 
     // --- PASSO 2: ESCOLHEU O SERVIDOR ---
     if (interaction.customId === "menu_servidor") {
-      const servidorEscolhido = escolha; // Pode ser 'arkzone' ou 'arkbot'
+      const servidorEscolhido = escolha;
       let nomeServidor =
         servidorEscolhido === "arkzone" ? "ArkZone 10x PVE" : "ArkBot Testes";
 
       const selectFuncionalidade = new StringSelectMenuBuilder()
-        // A mágica: Colocamos o ID do servidor no ID do menu para o bot lembrar!
         .setCustomId(`menu_funcionalidade_${servidorEscolhido}`)
         .setPlaceholder("2️⃣ O que deseja acessar?")
         .addOptions(
@@ -110,6 +106,26 @@ client.on("interactionCreate", async (interaction) => {
             .setEmoji("🛒")
             .setValue("shop"),
           new StringSelectMenuOptionBuilder()
+            .setLabel("Pacotes VIP")
+            .setDescription("Loja VIP e Doações")
+            .setEmoji("💎")
+            .setValue("vip"),
+          new StringSelectMenuOptionBuilder()
+            .setLabel("Regras")
+            .setDescription("Regras do Servidor")
+            .setEmoji("📜")
+            .setValue("regras"),
+          new StringSelectMenuOptionBuilder()
+            .setLabel("Rates e Infos")
+            .setDescription("Multiplicadores do servidor")
+            .setEmoji("📊")
+            .setValue("rates"),
+          new StringSelectMenuOptionBuilder()
+            .setLabel("Links Úteis")
+            .setDescription("Links de conexão e site")
+            .setEmoji("🔗")
+            .setValue("links"),
+          new StringSelectMenuOptionBuilder()
             .setLabel("Voltar")
             .setDescription("Escolher outro servidor")
             .setEmoji("⬅️")
@@ -117,23 +133,24 @@ client.on("interactionCreate", async (interaction) => {
         );
 
       const row = new ActionRowBuilder().addComponents(selectFuncionalidade);
-
       await interaction.update({
         content: `**Servidor Selecionado:** ${nomeServidor}\nO que você deseja acessar?`,
         components: [row],
       });
     }
 
-    // --- PASSO 3: ESCOLHEU A FUNCIONALIDADE (Shop ou Voltar) ---
+    // --- PASSO 3: ESCOLHEU A FUNCIONALIDADE ---
     if (interaction.customId.startsWith("menu_funcionalidade_")) {
       const servidorEscolhido = interaction.customId.replace(
         "menu_funcionalidade_",
         "",
       );
 
+      // Puxa o banco de dados correto para os textos
+      const db = servidorEscolhido === "arkzone" ? dbArkZone : dbArkBot;
+
       if (escolha === "shop") {
         const selectShop = new StringSelectMenuBuilder()
-          // Passamos o servidor pra frente de novo
           .setCustomId(`shop_dropdown_${servidorEscolhido}`)
           .setPlaceholder("3️⃣ Selecione a categoria da loja...")
           .addOptions(
@@ -158,12 +175,65 @@ client.on("interactionCreate", async (interaction) => {
               .setEmoji("📦")
               .setValue("misc"),
           );
-
         const row = new ActionRowBuilder().addComponents(selectShop);
         await interaction.update({
           content:
             "**Loja Aberta!**\nEscolha qual categoria de itens você deseja ver:",
           components: [row],
+        });
+      } else if (escolha === "vip") {
+        const embedVip = new EmbedBuilder()
+          .setTitle("💎 Pacotes VIP e Doações")
+          .setColor(0xffd700)
+          .setDescription(db.textos.vip);
+
+        // Exibe o botão de convite apenas no servidor principal
+        let componentes = [];
+        if (servidorEscolhido === "arkzone") {
+          componentes.push(
+            new ActionRowBuilder().addComponents(
+              new ButtonBuilder()
+                .setLabel("Entrar no Servidor (Convite)")
+                .setStyle(ButtonStyle.Link)
+                .setURL("https://discord.gg/aDyjGctRfJ"),
+            ),
+          );
+        }
+
+        await interaction.update({
+          content: "Veja como adquirir seu VIP:",
+          embeds: [embedVip],
+          components: componentes,
+        });
+      } else if (escolha === "regras") {
+        const embedRegras = new EmbedBuilder()
+          .setTitle("📜 Regras do Servidor")
+          .setColor(0xff0000)
+          .setDescription(db.textos.regras);
+        await interaction.update({
+          content: "Leia atentamente nossas regras:",
+          embeds: [embedRegras],
+          components: [],
+        });
+      } else if (escolha === "rates") {
+        const embedRates = new EmbedBuilder()
+          .setTitle("📊 Configurações e Rates")
+          .setColor(0x00ff00)
+          .setDescription(db.textos.rates);
+        await interaction.update({
+          content: "Confira os multiplicadores:",
+          embeds: [embedRates],
+          components: [],
+        });
+      } else if (escolha === "links") {
+        const embedLinks = new EmbedBuilder()
+          .setTitle("🔗 Links Úteis")
+          .setColor(0x0099ff)
+          .setDescription(db.textos.links);
+        await interaction.update({
+          content: "Aqui estão nossos links principais:",
+          embeds: [embedLinks],
+          components: [],
         });
       } else if (escolha === "voltar") {
         const selectServidor = new StringSelectMenuBuilder()
@@ -187,16 +257,14 @@ client.on("interactionCreate", async (interaction) => {
       }
     }
 
-    // --- PASSO 4: EXIBE A LISTA FINAL DO SHOP DE ACORDO COM O SERVIDOR ---
+    // --- PASSO 4: EXIBE A LISTA DO SHOP ---
     if (interaction.customId.startsWith("shop_dropdown_")) {
       const servidorEscolhido = interaction.customId.replace(
         "shop_dropdown_",
         "",
       );
-      let nomeServidor =
-        servidorEscolhido === "arkzone" ? "ArkZone 10x PVE" : "ArkBot Testes";
 
-      // Puxa o banco de dados correto de dentro da pasta "servidores"
+      // Puxa o banco de dados correto para os itens da loja
       const db = servidorEscolhido === "arkzone" ? dbArkZone : dbArkBot;
 
       let embedsParaEnviar = [];
@@ -206,48 +274,53 @@ client.on("interactionCreate", async (interaction) => {
           new EmbedBuilder()
             .setTitle(`🦖 Dinos (Parte 1)`)
             .setColor(0x2ec271)
-            .setDescription(db.dinos1),
+            .setDescription(db.loja.dinos1),
         );
         embedsParaEnviar.push(
           new EmbedBuilder()
             .setTitle(`🦖 Dinos (Parte 2)`)
             .setColor(0x2ec271)
-            .setDescription(db.dinos2),
+            .setDescription(db.loja.dinos2),
         );
       } else if (escolha === "recursos") {
         embedsParaEnviar.push(
           new EmbedBuilder()
             .setTitle(`🪨 Recursos`)
             .setColor(0x8b4513)
-            .setDescription(db.recursos),
+            .setDescription(db.loja.recursos),
         );
       } else if (escolha === "tributos") {
         embedsParaEnviar.push(
           new EmbedBuilder()
             .setTitle(`🩸 Tributos`)
             .setColor(0x8b0000)
-            .setDescription(db.tributos),
+            .setDescription(db.loja.tributos),
         );
       } else if (escolha === "equips") {
         embedsParaEnviar.push(
           new EmbedBuilder()
             .setTitle(`⚔️ Equipamentos`)
             .setColor(0x708090)
-            .setDescription(db.equips),
+            .setDescription(db.loja.equips),
         );
       } else if (escolha === "misc") {
         embedsParaEnviar.push(
           new EmbedBuilder()
             .setTitle(`📦 Misc`)
             .setColor(0x9b59b6)
-            .setDescription(db.misc)
-            .setFooter({ text: "Comando: /buy id quantidade" }),
+            .setDescription(db.loja.misc),
         );
       }
 
-      // Manda a lista e avisa de qual servidor é
+      // O FIX ESTÁ AQUI: Adiciona o rodapé ensinando a comprar em TODOS os embeds gerados!
+      embedsParaEnviar.forEach((embed) =>
+        embed.setFooter({
+          text: "💡 Para comprar use no jogo: /buy [id] [quantidade]",
+        }),
+      );
+
       await interaction.update({
-        content: `Aqui está a lista que você pediu referente ao servidor **${nomeServidor}**:`,
+        content: `Aqui está a lista que você pediu:`,
         embeds: embedsParaEnviar,
         components: [],
       });
