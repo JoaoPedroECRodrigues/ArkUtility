@@ -1,4 +1,6 @@
-require("dotenv").config();
+require("dotenv").config(); // carrega as config do .env pra n vazar o token
+
+// puxando todas as ferramentas do discord que a gnt vai usar
 const {
   Client,
   GatewayIntentBits,
@@ -8,12 +10,14 @@ const {
   ButtonStyle,
   StringSelectMenuBuilder,
   StringSelectMenuOptionBuilder,
+  AttachmentBuilder,
 } = require("discord.js");
 
-// Importando os bancos de dados de dentro da pasta "servidores"
+// importando nossos bancos de dados da pastinha servidores
 const dbArkZone = require("./servidores/arkzone10x.js");
 const dbArkBot = require("./servidores/arkbotTestes.js");
 
+// configurando o bot pra ele conseguir ler as msg e os chats
 const client = new Client({
   intents: [
     GatewayIntentBits.Guilds,
@@ -22,29 +26,35 @@ const client = new Client({
   ],
 });
 
-const PREFIX = "!";
+const PREFIX = "!"; // prefixo padrao
 
+// avisa no console qnd o bot ligar
 client.once("ready", () => {
-  console.log(
-    `🤖 Bot ArkUtil está online e pronto para gerenciar os servidores!`,
-  );
+  console.log(`🤖 Bot ArkUtil ta on e pronto pro combate!`);
 });
 
+// lendo as msgs da galera
 client.on("messageCreate", async (message) => {
+  // ignora se for outro bot ou se n tiver o prefixo
   if (message.author.bot || !message.content.startsWith(PREFIX)) return;
 
   const args = message.content.slice(PREFIX.length).trim().split(/ +/);
   const command = args.shift().toLowerCase();
 
-  // COMANDO PRINCIPAL: Aceita várias palavras para abrir o painel!
+  // COMANDO PRINCIPAL: aceita varias palavras pra ngm se perder
   if (["menu", "painel", "ajuda", "arkzone", "ark"].includes(command)) {
+    // puxa a foto q ta na msm pasta do bot (tem q chamar logo.png la nos arquivos)
+    const imagemLogo = new AttachmentBuilder("./logo.png");
+
     const embedCentral = new EmbedBuilder()
       .setTitle("🌐 Central ArkUtil")
       .setColor(0x0099ff)
       .setDescription(
         "Bem-vindo à central do ArkUtil! Clique no botão abaixo para abrir o painel de lojas e utilidades dos nossos servidores.",
-      );
+      )
+      .setThumbnail("attachment://logo.png"); // avisa pra embed usar o arquivo q a gnt puxou ali em cima
 
+    // botao azul lindao pra abrir o menu
     const btnAbrir = new ActionRowBuilder().addComponents(
       new ButtonBuilder()
         .setCustomId("btn_abrir_menu")
@@ -52,18 +62,20 @@ client.on("messageCreate", async (message) => {
         .setStyle(ButtonStyle.Primary),
     );
 
+    // manda a msg no chat com a embed, o botao e os arquivos (a imagem no caso)
     await message.channel.send({
       embeds: [embedCentral],
       components: [btnAbrir],
+      files: [imagemLogo],
     });
   }
 });
 
 // ==========================================
-// LÓGICA DE NAVEGAÇÃO DOS MENUS
+// LOGICA DOS MENUS (A magica toda acontece aqui)
 // ==========================================
 client.on("interactionCreate", async (interaction) => {
-  // 1. Abertura do Menu Inicial
+  // 1. O cara clicou no botao principal do painel
   if (interaction.isButton() && interaction.customId === "btn_abrir_menu") {
     const selectServidor = new StringSelectMenuBuilder()
       .setCustomId("menu_servidor")
@@ -79,6 +91,7 @@ client.on("interactionCreate", async (interaction) => {
           .setValue("arkbot"),
       );
     const row = new ActionRowBuilder().addComponents(selectServidor);
+    // ephemeral: true faz a msg ser so pra quem clicou (n polui o chat)
     await interaction.reply({
       content: "Olá! Escolha de qual servidor você quer ver as informações:",
       components: [row],
@@ -86,11 +99,11 @@ client.on("interactionCreate", async (interaction) => {
     });
   }
 
-  // 2. Ouvindo as seleções
+  // 2. Ouvindo o q o cara escolheu nos dropdowns
   if (interaction.isStringSelectMenu()) {
     const escolha = interaction.values[0];
 
-    // --- PASSO 2: ESCOLHEU O SERVIDOR ---
+    // --- PASSO 2: ESCOLHEU QUAL SERVIDOR VER ---
     if (interaction.customId === "menu_servidor") {
       const servidorEscolhido = escolha;
       let nomeServidor =
@@ -98,8 +111,11 @@ client.on("interactionCreate", async (interaction) => {
 
       const selectFuncionalidade = new StringSelectMenuBuilder()
         .setCustomId(`menu_funcionalidade_${servidorEscolhido}`)
-        .setPlaceholder("2️⃣ O que deseja acessar?")
-        .addOptions(
+        .setPlaceholder("2️⃣ O que deseja acessar?");
+
+      // se for o arkzone, mostra td. senao, mostra so o q tem de teste
+      if (servidorEscolhido === "arkzone") {
+        selectFuncionalidade.addOptions(
           new StringSelectMenuOptionBuilder()
             .setLabel("Loja (Shop)")
             .setDescription("Compre dinos e itens")
@@ -111,6 +127,11 @@ client.on("interactionCreate", async (interaction) => {
             .setEmoji("💎")
             .setValue("vip"),
           new StringSelectMenuOptionBuilder()
+            .setLabel("Comandos")
+            .setDescription("Lista de comandos in-game")
+            .setEmoji("⌨️")
+            .setValue("comandos"),
+          new StringSelectMenuOptionBuilder()
             .setLabel("Regras")
             .setDescription("Regras do Servidor")
             .setEmoji("📜")
@@ -120,6 +141,11 @@ client.on("interactionCreate", async (interaction) => {
             .setDescription("Multiplicadores do servidor")
             .setEmoji("📊")
             .setValue("rates"),
+          new StringSelectMenuOptionBuilder()
+            .setLabel("Drops e Saques")
+            .setDescription("Conteúdo de Sinalizadores")
+            .setEmoji("📦")
+            .setValue("drops"),
           new StringSelectMenuOptionBuilder()
             .setLabel("Links Úteis")
             .setDescription("Links de conexão e site")
@@ -131,6 +157,20 @@ client.on("interactionCreate", async (interaction) => {
             .setEmoji("⬅️")
             .setValue("voltar"),
         );
+      } else {
+        selectFuncionalidade.addOptions(
+          new StringSelectMenuOptionBuilder()
+            .setLabel("Loja (Shop)")
+            .setDescription("Compre dinos e itens")
+            .setEmoji("🛒")
+            .setValue("shop"),
+          new StringSelectMenuOptionBuilder()
+            .setLabel("Voltar")
+            .setDescription("Escolher outro servidor")
+            .setEmoji("⬅️")
+            .setValue("voltar"),
+        );
+      }
 
       const row = new ActionRowBuilder().addComponents(selectFuncionalidade);
       await interaction.update({
@@ -139,14 +179,14 @@ client.on("interactionCreate", async (interaction) => {
       });
     }
 
-    // --- PASSO 3: ESCOLHEU A FUNCIONALIDADE ---
+    // --- PASSO 3: ESCOLHEU O Q VER DO SERVIDOR (shop, regras, etc) ---
     if (interaction.customId.startsWith("menu_funcionalidade_")) {
       const servidorEscolhido = interaction.customId.replace(
         "menu_funcionalidade_",
         "",
       );
 
-      // Puxa o banco de dados correto para os textos
+      // puxa a base de dados certa dependendo do sv q ele escolheu
       const db = servidorEscolhido === "arkzone" ? dbArkZone : dbArkBot;
 
       if (escolha === "shop") {
@@ -186,9 +226,8 @@ client.on("interactionCreate", async (interaction) => {
           .setTitle("💎 Pacotes VIP e Doações")
           .setColor(0xffd700)
           .setDescription(db.textos.vip);
-
-        // Exibe o botão de convite apenas no servidor principal
         let componentes = [];
+        // so mostra o botao de discord se for o oficial
         if (servidorEscolhido === "arkzone") {
           componentes.push(
             new ActionRowBuilder().addComponents(
@@ -199,11 +238,20 @@ client.on("interactionCreate", async (interaction) => {
             ),
           );
         }
-
         await interaction.update({
           content: "Veja como adquirir seu VIP:",
           embeds: [embedVip],
           components: componentes,
+        });
+      } else if (escolha === "comandos") {
+        const embedComandos = new EmbedBuilder()
+          .setTitle("⌨️ Comandos do Servidor")
+          .setColor(0x00bfff)
+          .setDescription(db.textos.comandos);
+        await interaction.update({
+          content: "Aqui estão os comandos in-game disponíveis:",
+          embeds: [embedComandos],
+          components: [],
         });
       } else if (escolha === "regras") {
         const embedRegras = new EmbedBuilder()
@@ -223,6 +271,16 @@ client.on("interactionCreate", async (interaction) => {
         await interaction.update({
           content: "Confira os multiplicadores:",
           embeds: [embedRates],
+          components: [],
+        });
+      } else if (escolha === "drops") {
+        const embedDrops = new EmbedBuilder()
+          .setTitle("📦 Tabela de Drops e Sinalizadores")
+          .setColor(0x9b59b6)
+          .setDescription(db.textos.drops);
+        await interaction.update({
+          content: "Informações sobre os saques disponíveis no servidor:",
+          embeds: [embedDrops],
           components: [],
         });
       } else if (escolha === "links") {
@@ -257,18 +315,18 @@ client.on("interactionCreate", async (interaction) => {
       }
     }
 
-    // --- PASSO 4: EXIBE A LISTA DO SHOP ---
+    // --- PASSO 4: EXIBE A LISTA DA LOJA ---
     if (interaction.customId.startsWith("shop_dropdown_")) {
       const servidorEscolhido = interaction.customId.replace(
         "shop_dropdown_",
         "",
       );
 
-      // Puxa o banco de dados correto para os itens da loja
       const db = servidorEscolhido === "arkzone" ? dbArkZone : dbArkBot;
 
       let embedsParaEnviar = [];
 
+      // monta a embed dependendo doq o cara clicou
       if (escolha === "dinos") {
         embedsParaEnviar.push(
           new EmbedBuilder()
@@ -312,7 +370,7 @@ client.on("interactionCreate", async (interaction) => {
         );
       }
 
-      // O FIX ESTÁ AQUI: Adiciona o rodapé ensinando a comprar em TODOS os embeds gerados!
+      // o fixzinho bala pra ensinar a galera a comprar (poe em todas as abas da loja)
       embedsParaEnviar.forEach((embed) =>
         embed.setFooter({
           text: "💡 Para comprar use no jogo: /buy [id] [quantidade]",
@@ -328,4 +386,5 @@ client.on("interactionCreate", async (interaction) => {
   }
 });
 
+// liga o bot de fato!
 client.login(process.env.DISCORD_TOKEN);

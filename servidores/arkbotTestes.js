@@ -38,6 +38,11 @@ module.exports = {
       "⛏️ **Harvest:** 100x\n" +
       "🦖 **Taming:** Instantâneo",
 
+    drops: "Sem modificações nos drops para o ambiente de testes.",
+
     links: "Este servidor é fechado apenas para administradores.",
+
+    comandos:
+      "A lista de comandos segue a mesma base do servidor oficial, porém sem a restrição de custo para administradores.",
   },
 };

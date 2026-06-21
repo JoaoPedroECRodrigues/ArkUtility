@@ -165,7 +165,7 @@ module.exports = {
       "`zexdino` - 1kk points of exp Dino | Preço: 2000",
       "`zexplayer` - 100k points of exp Player | Preço: 5000",
     ].join("\n"),
-  }, // <-- Aqui estava o erro! Era apenas uma vírgula para separar a loja dos textos.
+  },
 
   // 📝 GAVETA DOS TEXTOS INFORMATIVOS
   textos: {
@@ -176,11 +176,17 @@ module.exports = {
       "⚠️ *Se você não estiver conseguindo ver os canais do Discord, clique no link abaixo para sincronizar:*",
 
     regras:
-      "**1.** Respeite todos os jogadores no chat global.\n" +
-      "**2.** Proibido prender dinos de outros jogadores.\n" +
-      "**3.** Proibido construir tapando o spawn de artefatos ou obeliscos.\n" +
-      "**4.** Limpe suas armadilhas de taming após o uso.\n\n" +
-      "*(O descumprimento pode gerar punições pelos Admins).*",
+      "**Regras de Conduta e Discord**\n" +
+      "💬 Seja respeitoso e trate todos com gentileza. Assédio e toxicidade não são tolerados.\n" +
+      "📜 Siga o Código de Conduta Oficial do Ark.\n" +
+      "🚫 É proibida a publicidade ou autopromoção de outros servidores (ARK).\n" +
+      "🛠️ Reporte problemas à equipe e use os canais do Discord corretamente.\n\n" +
+      "**Regras In-Game (Construções e Base)**\n" +
+      "⛺ **Limites:** A tribo tem direito a 1 base principal. Bases simples em outros mapas têm limite máximo de 20x20 fundações.\n" +
+      "📏 **Distância:** Proibido construir próximo a outros jogadores (não pode renderizar a base vizinha, exceto em área radioativa do Aberration).\n" +
+      "🪨 **Spawns:** Bases em locais ricos em recursos serão destruídas sem aviso prévio. Proibido construir em cavernas de recursos ou bloquear notas/runas.\n" +
+      "🧹 **Limpeza:** Proibido espalhar estruturas. Traps devem ser recolhidas após domesticar.\n" +
+      "🔓 **Coletores:** Bombas de petróleo/gás e coletores de seiva devem ser mantidos destrancados e com livre acesso.",
 
     rates:
       "**Gerais:**\n" +
@@ -191,8 +197,87 @@ module.exports = {
       "🦕 **Dino Selvagem Máx:** 150 (Wyverns 190)\n" +
       "🧍 **Player Máx:** 105 (Sem ascensão)",
 
+    drops:
+      "🎁 **Bônus do Sinalizador Anelado**\n" +
+      "*Sinalizadores anelados têm uma % maior de chance de dropar Projetos.*\n\n" +
+      "📊 **Raridade e Chances:**\n" +
+      "📦 **Drops Padrão:** Ramshackle ➔ Mastercraft (40% chance de Projeto)\n" +
+      "💫 **Drops Anelados:** Aprendiz ➔ Ascendente (60% chance de Projeto)\n\n" +
+      "⚪ **Drop Branco (Consumíveis + Utilidade)**\n" +
+      "↳ Consumíveis, Armadura Tecido/Deserto, Mesas de Sela Padrão\n\n" +
+      "🟢 **Drop Verde (Caça e Agricultura)**\n" +
+      "↳ Armadura Couro/Ghillie, Tabelas de Sela Padrão\n\n" +
+      "🔵 **Drop Azul (Foco em Ração)**\n" +
+      "↳ Armadura Couro/Pelo, Rifle de Cano Longo, Sela Padrão\n\n" +
+      "🟣 **Drop Roxo (Saques de Aberração)**\n" +
+      "↳ Armadura Quitina/Perigo, Rifle de Cano Longo, Sela Padrão\n\n" +
+      "🟡 **Drop Amarelo (Estruturas e Utilidades)**\n" +
+      "↳ Armadura Flak/Mergulho, Espingarda Ação por Bomba, Sela Padrão\n\n" +
+      "🔴 **Drop Vermelho (Saques de Fim de Jogo)**\n" +
+      "↳ Tek/Explosivos/Elemento, Armadura Flak/Revolta, Atirador de Elite Fabricado, Sela Padrão",
+
     links:
       "🛒 **Loja (Shop):** [Acessar Loja](https://arkzone.tebex.io/)\n" +
       "💬 **Convite Discord:** https://discord.gg/aDyjGctRfJ",
+
+    comandos:
+      "**📋 Comandos Gerais**\n" +
+      "`/kit` - Ver Kits Disponíveis\n" +
+      "`/shop` - Abre a interface da loja\n" +
+      "`/points` - Consulta Points\n" +
+      "`/tokens` - Consulta Tokens\n" +
+      "`/groups` - Mostra VIP ativo e tempo restante\n" +
+      "`/track` - Localizar Dinos\n" +
+      "`/engrams` - Desbloqueia engramas baseado no level\n" +
+      "`/corpolist` - Localizar Corpo do Player\n" +
+      "`/corpodinolist` - Localizar Corpo do Dino\n" +
+      "`/kill` - Suicidar\n" +
+      "`/limits` - Mostra os limites de estruturas no mapa\n" +
+      "`/status` - Consultar Status do Dino\n" +
+      "`/renomear` - Renomear Dino com Status\n" +
+      "`/dinolimits` - Mostrar limites de dinos no mapa\n" +
+      "`/upload` - Enviar inventário\n" +
+      "`/download` - Receber inventário\n\n" +
+      "**🪙 Comandos por Points**\n" +
+      "`/colordino` - Colorir Dino (120 Pts)\n" +
+      "`/getbody 1` - Recuperar Corpo (500 Pts)\n" +
+      "`/getdino` - Recuperar Corpo Dino (200 Pts)\n" +
+      "`/missao` - Completa missões Gen2 (5000 Pts)\n" +
+      "`/rename` - Renomeie seu sobrevivente (5000 Pts)\n" +
+      "`/mindwipe` - Mindwipe Player (250 Pts)\n" +
+      "`/buy allengrams` - Desbloqueia Todos Engrams (100k Pts)\n" +
+      "`/buy zexplayer` - 100k de Experiência Player (5000 Pts)\n" +
+      "`/buy zexdino` - 100k de Experiência Dino (2000 Pts)\n\n" +
+      "**🎫 Comandos por Tokens**\n" +
+      "`/dinomindwipe` - Mindwipe Dino (1 Token)\n" +
+      "`/raisebaby` - Transformar Bebe em Adulto (1 Token)\n" +
+      "`/resetmating` - Resetar Acasalamento (1 Token)\n" +
+      "`/cg` - Mudar Genero Dino (5 Tokens)\n" +
+      "`/finishclone` - Finalizar Clone Dino (1 Token)\n" +
+      "`/hatch` - Choca Ovo Fertilizado (1 Token)\n" +
+      "`/givebirth` - Complete Gestação do Dinossauro (1 Token)\n" +
+      "`/matenow` - Complete o Acasalamento do Dinossauro (1 Token)\n" +
+      "`/imprintchange` - Mude afinidade do proprietário (1 Token)\n\n" +
+      "**💎 Comandos VIP**\n" +
+      "`/sdc` - Pintar dinos (Ilimitado)\n" +
+      "`/pod` - Cryopodar Dino (Ilimitado)\n" +
+      "`/pods` - Cryopodar Dino Todos (Ilimitado)\n" +
+      "`/mindwipe` - Mindwipe Player (Ilimitado)\n" +
+      "`/tribo on` - Rastreador de Tribo\n" +
+      "`/transfergun` - Transfira inventário com a pistola\n" +
+      "`/pickupgun` - Recolha estruturas com a pistola\n" +
+      "`/addlocal <Nome>` - Adicionar um local de TP\n" +
+      "`/removelocal <Nome>` - Remove local de TP\n" +
+      "`/local <Nome>` - Teleporta você para o local\n" +
+      "`/locallist` - Lista todos os locais de TP\n" +
+      "`/tp <Nome>` - Teleporta para local público\n" +
+      "`/tplist` - Lista teleportes públicos\n" +
+      "`/collectpaste` - Coletor Pasta de Achatina\n" +
+      "`/collectpoly` - Coletor Polímero de Achatina\n" +
+      "`/collectcrystals` - Coletor Cristais\n" +
+      "`/collecteggsfert` - Coletor Ovos Fertilizados\n" +
+      "`/collecteggs` - Coletor Ovos\n" +
+      "`/collectpoop` - Coletor Cocô\n" +
+      "`/collectpellets` - Coletor Pellets",
   },
 };
