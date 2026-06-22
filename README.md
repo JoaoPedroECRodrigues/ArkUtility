@@ -37,9 +37,6 @@ Siga os passos abaixo para rodar ou editar o bot na sua máquina:
 - [Node.js](https://nodejs.org/) (Versão 16.9.0 ou superior)
 - Um Bot criado no [Discord Developer Portal](https://discord.com/developers/applications)
 
-### 2. Clonando o repositório
+### 📂 Repositório
 
-```bash
-git clone [https://github.com/JoaoPedroECRodrigues/ArkUtility.git](https://github.com/JoaoPedroECRodrigues/ArkUtility.git)
-cd ArkUtility
-```
+[![](https://img.shields.io/badge/GitHub-ArkUtility-blue?style=for-the-badge&logo=github)](https://github.com/JoaoPedroECRodrigues/ArkUtility)
