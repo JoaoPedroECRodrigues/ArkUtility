@@ -17,7 +17,7 @@ Um bot interativo e inteligente para comunidades de **ARK: Survival Evolved / As
 
 Para adicionar o ArkUtil ao seu servidor, certifique-se de usar o link abaixo. Ele já contém todas as permissões necessárias para o funcionamento dos _Slash Commands_ e _Embeds_ visuais.
 
-> **[CLIQUE AQUI PARA CONVIDAR O ARKUTIL PARA O SEU SERVIDOR](#coloque_seu_link_gerado_no_oauth2_aqui)**
+> **[CLIQUE AQUI PARA CONVIDAR O ARKUTIL PARA O SEU SERVIDOR](https://discord.com/oauth2/authorize?client_id=1518271177792032928&permissions=274878286848&integration_type=0&scope=bot+applications.commands)**
 
 **Permissões incluídas neste link:**
 
@@ -40,6 +40,6 @@ Siga os passos abaixo para rodar ou editar o bot na sua máquina:
 ### 2. Clonando o repositório
 
 ```bash
-git clone [https://github.com/SEU_USUARIO/ArkUtility.git](https://github.com/SEU_USUARIO/ArkUtility.git)
+git clone [https://github.com/JoaoPedroECRodrigues/ArkUtility.git](https://github.com/JoaoPedroECRodrigues/ArkUtility.git)
 cd ArkUtility
 ```
