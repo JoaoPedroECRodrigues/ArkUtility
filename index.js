@@ -121,7 +121,7 @@ client.on("interactionCreate", async (interaction) => {
         .setTitle("🤖 Quem é o ArkUtil?")
         .setColor(0x2ec271)
         .setDescription(
-          "Fala, sobrevivente! 🦖\n\nEu sou o ArkUtil, o braço direito aqui no ArkZone. Meu objetivo é simples: facilitar a sua vida pra vc não perder tempo e focar em dominar o mapa.\n\nComigo, vc tem acesso rápido à nossa loja, onde pode checar os dinos e entender certinho os custos (seja em **Tokens** ou **Points**). Também entrego rules, rates e cmds rapidinho.\n\nO ArkUtil não tá aqui pra substituir a staff, mas sim pra cuidar das perguntas repetitivas e deixar os admins focarem em melhorar o sv pra vcs!\n\nTô sempre evoluindo. Bora pro jogo!",
+          "Fala, sobrevivente! 🦖\n\nEu sou o ArkUtil, criado a partir de uma necessidade simples: transformar a experiência de gerenciar informações no ARK em algo muito mais prático e centralizado.\n\nCansei de ver jogadores perdidos procurando tabelas, regras ou comandos em diferentes lugares, então desenvolvi este bot para ser o seu braço direito. Comigo, você tem acesso rápido a tudo o que precisa — desde o catálogo da loja e configurações do servidor até listas de comandos e regras — sem precisar sair do Discord ou abrir abas externas.\n\nO meu objetivo é poupar o seu tempo e o da administração, deixando as informações importantes sempre à mão, de forma organizada e eficiente. Estou em constante evolução para tornar sua jogatina mais fluida. Bora pro jogo!",
         );
 
       await interaction.reply({ embeds: [embedSobre] });
