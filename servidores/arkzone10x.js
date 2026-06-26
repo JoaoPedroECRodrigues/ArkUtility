@@ -232,7 +232,7 @@ module.exports = {
       "**Drop Amarelo (Estruturas e Utilidades)**\n" +
       "↳ Armadura Flak/Mergulho, Espingarda Ação por Bomba, Sela Padrão\n\n" +
       "**Drop Vermelho (Saques de Fim de Jogo)**\n" +
-      "↳ Tek/Explosivos/Elemento, Armadura Flak/Revolta, Atirador de Elite Fabricado, Sela Padrão",
+      "↳ Tek/Explosivos/Elemento, Armadura Flak/Riot, Atirador de Elite Fabricado, Sela Padrão",
 
     links:
       "**Nossos Links Oficiais:**\n" +
