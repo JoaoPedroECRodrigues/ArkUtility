@@ -15,8 +15,15 @@ const {
   SlashCommandBuilder,
 } = require("discord.js");
 
+const {
+  configuracoes,
+  calcularCombustivel,
+  calcularTaming,
+  calcularRaise,
+} = require("./modulos/calculadoraArk.js");
+const { buscarDinoWiki } = require("./modulos/wikiArk.js");
+
 // Puxando os bancos de dados
-const dbArkZone = require("./servidores/arkzone10x.js");
 const dbArkBot = require("./servidores/arkbotTestes.js");
 
 const client = new Client({ intents: [GatewayIntentBits.Guilds] });
@@ -28,6 +35,52 @@ const comandosSlash = [
   new SlashCommandBuilder()
     .setName("sobre")
     .setDescription("Apresentação do ArkUtil e seus objetivos"),
+  new SlashCommandBuilder()
+    .setName("calculadora")
+    .setDescription("Calcula combustíveis, taming e raise por taxa do servidor")
+    .addStringOption((option) =>
+      option
+        .setName("servidor")
+        .setDescription("Servidor configurado")
+        .setRequired(true)
+        .addChoices(
+          ...Object.keys(configuracoes)
+            .filter((key) => key !== "default")
+            .map((key) => ({ name: configuracoes[key].nome, value: key })),
+        ),
+    )
+    .addStringOption((option) =>
+      option
+        .setName("tipo")
+        .setDescription("Tipo de cálculo")
+        .setRequired(true)
+        .addChoices(
+          { name: "Combustível", value: "combustivel" },
+          { name: "Taming", value: "taming" },
+          { name: "Raise", value: "raise" },
+        ),
+    )
+    .addNumberOption((option) =>
+      option
+        .setName("valor")
+        .setDescription("Quantidade ou nível para calcular")
+        .setRequired(true),
+    )
+    .addNumberOption((option) =>
+      option
+        .setName("tempo")
+        .setDescription("Tempo em horas para combustível (opcional)")
+        .setRequired(false),
+    ),
+  new SlashCommandBuilder()
+    .setName("wiki")
+    .setDescription("Busca um dino na wiki oficial do ARK")
+    .addStringOption((option) =>
+      option
+        .setName("dino")
+        .setDescription("Nome do dino em inglês")
+        .setRequired(true),
+    ),
 ];
 
 const rest = new REST({ version: "10" }).setToken(process.env.DISCORD_TOKEN);
@@ -36,7 +89,6 @@ const rest = new REST({ version: "10" }).setToken(process.env.DISCORD_TOKEN);
 // CONFIGURAÇÃO DE IDs DOS SERVIDORES
 // ==========================================
 const ID_TESTES = "1518266572647436429"; // O ID do servidor de testes onde tudo é liberado e visível
-const ID_ARKZONE = "1518271177792032928"; // O ID do servidor do ArkZone
 
 client.once("ready", async () => {
   console.log(`🤖 Bot ArkUtil ta ON!`);
@@ -56,24 +108,12 @@ function gerarMenuServidores(guildId) {
     .setCustomId("menu_servidor")
     .setPlaceholder("1️⃣ Escolha o Servidor...");
 
-  // Lógica principal: Testes vê tudo, clientes veem apenas o deles
   if (guildId === ID_TESTES) {
     selectServidor.addOptions(
-      new StringSelectMenuOptionBuilder()
-        .setLabel("ArkZone 10x PVE")
-        .setEmoji("🦖")
-        .setValue("arkzone"),
       new StringSelectMenuOptionBuilder()
         .setLabel("ArkBot Testes")
         .setEmoji("🧪")
         .setValue("arkbot"),
-    );
-  } else if (guildId === ID_ARKZONE) {
-    selectServidor.addOptions(
-      new StringSelectMenuOptionBuilder()
-        .setLabel("ArkZone 10x PVE")
-        .setEmoji("🦖")
-        .setValue("arkzone"),
     );
   } else {
     // Fallback caso seja adicionado em um servidor não configurado
@@ -84,6 +124,37 @@ function gerarMenuServidores(guildId) {
     );
   }
   return selectServidor;
+}
+
+function gerarLayoutCalculadora(servidorEscolhido) {
+  const selectCalc = new StringSelectMenuBuilder()
+    .setCustomId(`calc_menu_${servidorEscolhido}`)
+    .setPlaceholder("2️⃣ Escolha a calculadora...");
+
+  selectCalc.addOptions(
+    new StringSelectMenuOptionBuilder()
+      .setLabel("Combustível")
+      .setDescription("Consumo em horas e duração de tanques")
+      .setEmoji("⛽")
+      .setValue("combustivel"),
+    new StringSelectMenuOptionBuilder()
+      .setLabel("Taming")
+      .setDescription("Tempo estimado de domar dinos")
+      .setEmoji("🦖")
+      .setValue("taming"),
+    new StringSelectMenuOptionBuilder()
+      .setLabel("Raise")
+      .setDescription("Tempo estimado de crescimento")
+      .setEmoji("🌱")
+      .setValue("raise"),
+    new StringSelectMenuOptionBuilder()
+      .setLabel("Voltar")
+      .setDescription("Menu anterior")
+      .setEmoji("⬅️")
+      .setValue("voltar"),
+  );
+
+  return selectCalc;
 }
 
 client.on("interactionCreate", async (interaction) => {
@@ -126,6 +197,79 @@ client.on("interactionCreate", async (interaction) => {
 
       await interaction.reply({ embeds: [embedSobre] });
     }
+
+    if (interaction.commandName === "calculadora") {
+      const servidor = interaction.options.getString("servidor");
+      const tipo = interaction.options.getString("tipo");
+      const valor = interaction.options.getNumber("valor");
+      const tempo = interaction.options.getNumber("tempo") || 12;
+
+      let resultado;
+      if (tipo === "combustivel") {
+        resultado = calcularCombustivel({
+          servidor,
+          tipo: "gasolina",
+          quantidade: valor,
+          horas: tempo,
+        });
+      } else if (tipo === "taming") {
+        resultado = calcularTaming({ servidor, nivel: valor });
+      } else {
+        resultado = calcularRaise({ servidor, nivel: valor });
+      }
+
+      const embedCalc = new EmbedBuilder()
+        .setTitle("🧮 Calculadora Ark")
+        .setColor(0xffa500)
+        .setDescription(
+          `**Servidor:** ${resultado.servidor}\n` +
+            `**Taxa configurada:** ${resultado.taxa}x\n\n` +
+            (tipo === "combustivel"
+              ? `**Combustível:** ${resultado.tipo}\n` +
+                `**Quantidade disponível:** ${resultado.quantidade}\n` +
+                `**Consumo por hora:** ${resultado.consumoPorHora}\n` +
+                `**Consumo total em ${resultado.horas}h:** ${resultado.consumoTotal}\n` +
+                `**Duração estimada:** ${resultado.duracaoFormatada}`
+              : tipo === "taming"
+                ? `**Nível de taming:** ${resultado.nivel}\n` +
+                  `**Tempo estimado:** ${resultado.tempoFormatado}`
+                : `**Nível de raise:** ${resultado.nivel}\n` +
+                  `**Tempo estimado:** ${resultado.tempoFormatado}`),
+        );
+
+      await interaction.reply({ embeds: [embedCalc] });
+    }
+
+    if (interaction.commandName === "wiki") {
+      await interaction.deferReply();
+
+      const nomeDino = interaction.options.getString("dino");
+      const resultado = await buscarDinoWiki(nomeDino);
+
+      if (!resultado.sucesso) {
+        const embedErro = new EmbedBuilder()
+          .setTitle("📚 Wiki do ARK")
+          .setColor(0x00bfff)
+          .setDescription(
+            `${resultado.resumo}\n\n[Ver na wiki oficial](${resultado.linkOficial})`,
+          );
+
+        return interaction.editReply({ embeds: [embedErro] });
+      }
+
+      const embedWiki = new EmbedBuilder()
+        .setTitle(`📚 ${resultado.nome}`)
+        .setColor(0x00bfff)
+        .setDescription(
+          `${resultado.resumo}\n\n[Ver na wiki oficial](${resultado.linkOficial})`,
+        );
+
+      if (resultado.imagem) {
+        embedWiki.setThumbnail(resultado.imagem);
+      }
+
+      return interaction.editReply({ embeds: [embedWiki] });
+    }
   }
 
   // --- 2. BOTAO DE ABRIR O MENU ---
@@ -159,53 +303,7 @@ client.on("interactionCreate", async (interaction) => {
         .setCustomId(`menu_func_${servidorEscolhido}`)
         .setPlaceholder("2️⃣ O que deseja acessar?");
 
-      // Se for Arkzone mostra TUDO
-      if (servidorEscolhido === "arkzone") {
-        selectFunc.addOptions(
-          new StringSelectMenuOptionBuilder()
-            .setLabel("Loja (Shop)")
-            .setDescription("Compre dinos e itens")
-            .setEmoji("🛒")
-            .setValue("shop"),
-          new StringSelectMenuOptionBuilder()
-            .setLabel("Pacotes VIP")
-            .setDescription("Loja VIP e Doações")
-            .setEmoji("💎")
-            .setValue("vip"),
-          new StringSelectMenuOptionBuilder()
-            .setLabel("Comandos")
-            .setDescription("Lista de cmds in-game")
-            .setEmoji("⌨️")
-            .setValue("comandos"),
-          new StringSelectMenuOptionBuilder()
-            .setLabel("Regras")
-            .setDescription("Regras do Servidor")
-            .setEmoji("📜")
-            .setValue("regras"),
-          new StringSelectMenuOptionBuilder()
-            .setLabel("Rates e Infos")
-            .setDescription("Multiplicadores")
-            .setEmoji("📊")
-            .setValue("rates"),
-          new StringSelectMenuOptionBuilder()
-            .setLabel("Drops e Saques")
-            .setDescription("Conteúdo de Sinalizadores")
-            .setEmoji("📦")
-            .setValue("drops"),
-          new StringSelectMenuOptionBuilder()
-            .setLabel("Links Úteis")
-            .setDescription("Links de conexão e site")
-            .setEmoji("🔗")
-            .setValue("links"),
-          new StringSelectMenuOptionBuilder()
-            .setLabel("Voltar")
-            .setDescription("Escolher outro servidor")
-            .setEmoji("⬅️")
-            .setValue("voltar"),
-        );
-      }
-      // Se for Testes mostra só o básico
-      else if (servidorEscolhido === "arkbot") {
+      if (servidorEscolhido === "arkbot") {
         selectFunc.addOptions(
           new StringSelectMenuOptionBuilder()
             .setLabel("Loja (Shop)")
@@ -217,6 +315,26 @@ client.on("interactionCreate", async (interaction) => {
             .setDescription("Lista de comandos")
             .setEmoji("⌨️")
             .setValue("comandos"),
+          new StringSelectMenuOptionBuilder()
+            .setLabel("Regras")
+            .setDescription("Regras do servidor")
+            .setEmoji("📜")
+            .setValue("regras"),
+          new StringSelectMenuOptionBuilder()
+            .setLabel("Rates e Infos")
+            .setDescription("Multiplicadores")
+            .setEmoji("📊")
+            .setValue("rates"),
+          new StringSelectMenuOptionBuilder()
+            .setLabel("Links Úteis")
+            .setDescription("Links de conexão e site")
+            .setEmoji("🔗")
+            .setValue("links"),
+          new StringSelectMenuOptionBuilder()
+            .setLabel("Calculadora Ark")
+            .setDescription("Combustível, Taming e Raise")
+            .setEmoji("🧮")
+            .setValue("calculadora"),
           new StringSelectMenuOptionBuilder()
             .setLabel("Voltar")
             .setDescription("Escolher outro servidor")
@@ -235,7 +353,17 @@ client.on("interactionCreate", async (interaction) => {
     // --- Escolheu a Categoria (Loja, VIP, Regras, etc) ---
     if (interaction.customId.startsWith("menu_func_")) {
       const servidorEscolhido = interaction.customId.replace("menu_func_", "");
-      const db = servidorEscolhido === "arkzone" ? dbArkZone : dbArkBot;
+      const db = dbArkBot;
+
+      if (escolha === "calculadora") {
+        const selectCalc = gerarLayoutCalculadora(servidorEscolhido);
+        const row = new ActionRowBuilder().addComponents(selectCalc);
+        await interaction.update({
+          content: `**Calculadora Ark**\nSelecione o tipo de cálculo para o servidor **${configuracoes[servidorEscolhido]?.nome || "Servidor"}**:`,
+          components: [row],
+        });
+        return;
+      }
 
       if (escolha === "shop") {
         const selectShop = new StringSelectMenuBuilder()
@@ -339,7 +467,6 @@ client.on("interactionCreate", async (interaction) => {
           components: [],
         });
       } else if (escolha === "voltar") {
-        // Usa a mesma função auxiliar para gerar o menu correto no retorno
         const selectServidor = gerarMenuServidores(interaction.guildId);
         const row = new ActionRowBuilder().addComponents(selectServidor);
         await interaction.update({
@@ -349,13 +476,104 @@ client.on("interactionCreate", async (interaction) => {
       }
     }
 
+    if (interaction.customId.startsWith("calc_menu_")) {
+      const servidorEscolhido = interaction.customId.replace("calc_menu_", "");
+
+      if (escolha === "voltar") {
+        const selectFunc = new StringSelectMenuBuilder()
+          .setCustomId(`menu_func_${servidorEscolhido}`)
+          .setPlaceholder("2️⃣ O que deseja acessar?");
+        selectFunc.addOptions(
+          new StringSelectMenuOptionBuilder()
+            .setLabel("Loja (Shop)")
+            .setDescription("Compre dinos e itens")
+            .setEmoji("🛒")
+            .setValue("shop"),
+          new StringSelectMenuOptionBuilder()
+            .setLabel("Comandos")
+            .setDescription("Lista de comandos")
+            .setEmoji("⌨️")
+            .setValue("comandos"),
+          new StringSelectMenuOptionBuilder()
+            .setLabel("Regras")
+            .setDescription("Regras do servidor")
+            .setEmoji("📜")
+            .setValue("regras"),
+          new StringSelectMenuOptionBuilder()
+            .setLabel("Rates e Infos")
+            .setDescription("Multiplicadores")
+            .setEmoji("📊")
+            .setValue("rates"),
+          new StringSelectMenuOptionBuilder()
+            .setLabel("Links Úteis")
+            .setDescription("Links de conexão e site")
+            .setEmoji("🔗")
+            .setValue("links"),
+          new StringSelectMenuOptionBuilder()
+            .setLabel("Calculadora Ark")
+            .setDescription("Combustível, Taming e Raise")
+            .setEmoji("🧮")
+            .setValue("calculadora"),
+          new StringSelectMenuOptionBuilder()
+            .setLabel("Voltar")
+            .setDescription("Escolher outro servidor")
+            .setEmoji("⬅️")
+            .setValue("voltar"),
+        );
+
+        const row = new ActionRowBuilder().addComponents(selectFunc);
+        await interaction.update({
+          content: "O que você deseja acessar?",
+          components: [row],
+        });
+        return;
+      }
+
+      const resultado =
+        escolha === "combustivel"
+          ? calcularCombustivel({
+              servidor: servidorEscolhido,
+              tipo: "gasolina",
+              quantidade: 100,
+              horas: 12,
+            })
+          : escolha === "taming"
+            ? calcularTaming({ servidor: servidorEscolhido, nivel: 120 })
+            : calcularRaise({ servidor: servidorEscolhido, nivel: 120 });
+
+      const embedCalc = new EmbedBuilder()
+        .setTitle("🧮 Calculadora Ark")
+        .setColor(0xffa500)
+        .setDescription(
+          `**Servidor:** ${resultado.servidor}\n` +
+            `**Taxa configurada:** ${resultado.taxa}x\n\n` +
+            (escolha === "combustivel"
+              ? `**Combustível:** ${resultado.tipo}\n` +
+                `**Quantidade disponível:** ${resultado.quantidade}\n` +
+                `**Consumo por hora:** ${resultado.consumoPorHora}\n` +
+                `**Consumo total em ${resultado.horas}h:** ${resultado.consumoTotal}\n` +
+                `**Duração estimada:** ${resultado.duracaoFormatada}`
+              : escolha === "taming"
+                ? `**Nível de taming:** ${resultado.nivel}\n` +
+                  `**Tempo estimado:** ${resultado.tempoFormatado}`
+                : `**Nível de raise:** ${resultado.nivel}\n` +
+                  `**Tempo estimado:** ${resultado.tempoFormatado}`),
+        );
+
+      await interaction.update({
+        content: " ",
+        embeds: [embedCalc],
+        components: [],
+      });
+    }
+
     // --- Escolheu aba da Loja ---
     if (interaction.customId.startsWith("shop_dropdown_")) {
       const servidorEscolhido = interaction.customId.replace(
         "shop_dropdown_",
         "",
       );
-      const db = servidorEscolhido === "arkzone" ? dbArkZone : dbArkBot;
+      const db = dbArkBot;
 
       if (escolha === "voltar_func") {
         // Se clicar em voltar dentro da loja, a gente finge que ele acabou de selecionar o servidor
