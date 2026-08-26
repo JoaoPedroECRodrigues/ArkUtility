@@ -14,13 +14,18 @@ async function buscarDinoWiki(nomeDino) {
     };
   }
 
-  const url =
-    `https://ark.wiki.gg/api.php?action=query&prop=extracts|pageimages&titles=${nomeFormatado}&format=json&exintro=1&explaintext=1&pithumbsize=512`;
+  const queryUrl = new URL("https://ark.wiki.gg/api.php");
+  queryUrl.searchParams.set("action", "query");
+  queryUrl.searchParams.set("prop", "info");
+  queryUrl.searchParams.set("format", "json");
+  queryUrl.searchParams.set("titles", nomeFormatado);
 
   try {
-    const response = await fetch(url);
+    const paginaQuery = await fetch(queryUrl.toString(), {
+      headers: { Accept: "application/json" },
+    });
 
-    if (!response.ok) {
+    if (!paginaQuery.ok) {
       return {
         sucesso: false,
         nome: nomeFormatado,
@@ -31,11 +36,11 @@ async function buscarDinoWiki(nomeDino) {
       };
     }
 
-    const data = await response.json();
+    const data = await paginaQuery.json();
     const pages = data?.query?.pages ?? {};
     const page = Object.values(pages)[0];
 
-    if (!page || page.pageid === -1) {
+    if (!page || page.missing || page.invalid || page.pageid === -1) {
       return {
         sucesso: false,
         nome: nomeFormatado,
@@ -48,20 +53,55 @@ async function buscarDinoWiki(nomeDino) {
     }
 
     const nome = page.title || nomeFormatado;
-    const resumoOriginal = page.extract || "Nenhum resumo disponível.";
-    const resumo =
-      resumoOriginal.length > 2000
-        ? `${resumoOriginal.slice(0, 1997)}...`
-        : resumoOriginal;
 
-    const imagem =
-      page.thumbnail && page.thumbnail.source ? page.thumbnail.source : null;
+    const parseUrl = new URL("https://ark.wiki.gg/api.php");
+    parseUrl.searchParams.set("action", "parse");
+    parseUrl.searchParams.set("page", nomeFormatado);
+    parseUrl.searchParams.set("prop", "text");
+    parseUrl.searchParams.set("format", "json");
+
+    const parseResponse = await fetch(parseUrl.toString(), {
+      headers: { Accept: "application/json" },
+    });
+
+    if (!parseResponse.ok) {
+      return {
+        sucesso: false,
+        nome,
+        resumo:
+          "A página existe, mas a API do texto não respondeu corretamente.",
+        imagem: null,
+        linkOficial: `https://ark.wiki.gg/wiki/${nomeFormatado}`,
+        motivo: "parse_erro",
+      };
+    }
+
+    const parseData = await parseResponse.json();
+    const html = parseData?.parse?.text?.["*"] ?? "";
+    const paragrafos = Array.from(html.matchAll(/<p[^>]*>([\s\S]*?)<\/p>/gi))
+      .map((match) => match[1])
+      .map((p) =>
+        p
+          .replace(/<[^>]+>/g, " ")
+          .replace(/&nbsp;/g, " ")
+          .replace(/&#160;/g, " ")
+          .replace(/\s+/g, " ")
+          .trim(),
+      )
+      .filter(
+        (p) => p && p.length > 30 && !p.startsWith("This article is about"),
+      );
+
+    let resumo = paragrafos[0] || "Nenhum resumo disponível.";
+    resumo = resumo.length > 2000 ? `${resumo.slice(0, 1997)}...` : resumo;
+
+    const imageUrl = await buscarImagemArquivo(nomeFormatado);
 
     return {
       sucesso: true,
       nome,
       resumo,
-      imagem,
+      imagem: imageUrl,
       linkOficial: `https://ark.wiki.gg/wiki/${nomeFormatado}`,
     };
   } catch (error) {
@@ -73,6 +113,38 @@ async function buscarDinoWiki(nomeDino) {
       linkOficial: `https://ark.wiki.gg/wiki/${nomeFormatado}`,
       motivo: "excecao",
     };
+  }
+}
+
+async function buscarImagemArquivo(nomeFormatado) {
+  const arquivo = `File:${nomeFormatado.replace(/_/g, "")}.png`;
+  const imageUrl = new URL("https://ark.wiki.gg/api.php");
+  imageUrl.searchParams.set("action", "query");
+  imageUrl.searchParams.set("prop", "imageinfo");
+  imageUrl.searchParams.set("titles", arquivo);
+  imageUrl.searchParams.set("iiprop", "url");
+  imageUrl.searchParams.set("format", "json");
+
+  try {
+    const imagemResponse = await fetch(imageUrl.toString(), {
+      headers: { Accept: "application/json" },
+    });
+
+    if (!imagemResponse.ok) {
+      return null;
+    }
+
+    const imagemData = await imagemResponse.json();
+    const pages = imagemData?.query?.pages ?? {};
+    const page = Object.values(pages).find((item) => item.imageinfo?.length);
+
+    if (!page || !page.imageinfo || page.imageinfo.length === 0) {
+      return null;
+    }
+
+    return page.imageinfo[0].url || null;
+  } catch (error) {
+    return null;
   }
 }
 
